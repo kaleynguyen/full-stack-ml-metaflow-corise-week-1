@@ -46,17 +46,18 @@ class BaselineNLPFlow(FlowSpec):
     def baseline(self):
         "Compute the baseline"
         
-        ### TODO: Fit and score a baseline model on the data, log the acc and rocauc as artifacts.
-        import gensim
-
-        self.base_acc = 0.5
-        self.base_rocauc = 0.5
-
+        ### TODO: Fit and score a baseline model on the val data, log the acc and rocauc as artifacts.
+        from sklearn.metrics import accuracy_score, roc_auc_score
+        self.baseline_predictions = [1] * self.valdf.shape[0]
+        self.base_acc = accuracy_score(self.valdf.label, self.baseline_predictions)
+        self.base_rocauc = roc_auc_score(self.valdf.label, self.baseline_predictions)
         self.next(self.end)
         
     @card(type='corise') # TODO: after you get the flow working, chain link on the left side nav to open your card!
     @step
     def end(self):
+        import numpy as np 
+        import pandas as pd
 
         msg = 'Baseline Accuracy: {}\nBaseline AUC: {}'
         print(msg.format(
@@ -71,10 +72,20 @@ class BaselineNLPFlow(FlowSpec):
         # TODO: compute the false positive predictions where the baseline is 1 and the valdf label is 0. 
         # TODO: display the false_positives dataframe using metaflow.cards
         # Documentation: https://docs.metaflow.org/api/cards#table
+        tp = np.sum(self.valdf.label.iloc[np.where(self.valdf.label==1)])
+        fp = np.sum(self.valdf.label.iloc[np.where(self.valdf.label==0)])
+        current.card.append(
+             Table.from_dataframe(pd.DataFrame({"TP": [tp], "FP": [fp] }))
+                )
+
+       
         
         current.card.append(Markdown("## Examples of False Negatives"))
         # TODO: compute the false positive predictions where the baseline is 0 and the valdf label is 1. 
         # TODO: display the false_negatives dataframe using metaflow.cards
+        current.card.append(
+             Table.from_dataframe(pd.DataFrame({"TN": [0], "FN": [0] }))
+                )
 
 if __name__ == '__main__':
     BaselineNLPFlow()
